@@ -15,7 +15,7 @@ module synth_alu #(
 	) (
 		input wire clk, reset, en,
 
-		input wire [ACC_BITS-1:0] src2_note_mul, src2_pwm_offs, src2_vol, src2_slope_frac,
+		input wire [ACC_BITS-1:0] src2_note_mul, src2_pwm_offs, src2_vol, src2_slope_frac, src2_bdrum_phase,
 		input wire [OUT_ACC_BITS-1:0] out_acc_initial,
 
 		input wire [`SRC1_BITS-1:0] src1_sel,
@@ -137,7 +137,9 @@ module synth_alu #(
 			`SRC2_OUT_ACC_HIGH0:src2 = out_acc_initial[OUT_ACC_BITS-1:ACC_BITS];
 
 			`SRC2_ACC_SHL1:     src2 = acc << 1;
-			`SRC2_BDRUM_PHASE:  src2 = 'X;
+`ifdef USE_BDRUM
+			`SRC2_BDRUM_PHASE:  src2 = src2_bdrum_phase;
+`endif
 			default:            src2 = 'X;
 		endcase
 		if (src2_zero) src2 = '0;
@@ -211,6 +213,7 @@ module synth_scheduler  #(
 		DELTA_SIGMA_BITS = 4,
 		// Don't change:
 		ACC_BITS = FACTOR_A_BITS, // Must be even and >= FACTOR_A_BITS
+		BDRUM_PHASE_BITS = 13,
 		STATE_BITS = 6
 	) (
 		input wire clk, reset,
@@ -221,8 +224,9 @@ module synth_scheduler  #(
 		input wire [OUT_ACC_BITS-1:0] out_acc_initial,
 		input wire [STATE_BITS-1:0] state,
 		input wire [ACC_BITS-1:0] src2_note_mul, src2_pwm_offs, src2_vol, src2_slope_frac,
+		input wire [BDRUM_PHASE_BITS-1:0] bdrum_phase,
 		input wire [OCT_BITS-1:0] oct,
-		input wire saw,
+		input wire saw, bdrum_en, force_no_b_delay,
 		input wire [NSHIFT_BITS-1:0] nshift,
 		input wire [`GAIN_SHR_BITS-1:0] gain_shr,
 
@@ -348,7 +352,7 @@ module synth_scheduler  #(
 				0, 1, 2, 3, 4, 5, 6, 7, 8, 9: begin
 					// note multiplication
 					src1_sel = (state == 0) ? `SRC1_ZERO : `SRC1_ACC;
-					src2_sel = `SRC2_NOTE_MUL;
+					src2_sel = bdrum_en ? `SRC2_BDRUM_PHASE : `SRC2_NOTE_MUL;
 					src2_mod[`SRC2MOD_BIT_BOOTH] = 1;
 					res_sel = `RES_BOOTH;
 					wes[`WE_BIT_ACC] = 1;
@@ -491,20 +495,59 @@ module synth_scheduler  #(
 	wire [$clog2(GPHASE_BITS)-1:0] factor_b_index_b1 = {factor_b_index[FACTOR_B_INDEX_BITS-1-1:1], 1'b1};
 	wire [$clog2(GPHASE_BITS)-1:0] factor_b_index_b0 = {factor_b_index[FACTOR_B_INDEX_BITS-1-1:1], 1'b0};
 
-	wire [1:0] factor_b_src = factor_b_index[FACTOR_B_INDEX_BITS-1] ? 0 : {gphase[factor_b_index_b1], gphase[factor_b_index_b0]};
+	localparam BDRUM_PHASE_SKIP_BIT = BDRUM_PHASE_BITS - ACC_BITS;
+
+	//wire [GPHASE_BITS-1:0] bdrum_phase_ext = {2'b10, bdrum_phase};
+	//wire [GPHASE_BITS-1:0] bdrum_phase_ext = {2'b10, bdrum_phase[BDRUM_PHASE_BITS-1:BDRUM_PHASE_SKIP_BIT+1], bdrum_phase[BDRUM_PHASE_SKIP_BIT-1:0]};
+	//wire [GPHASE_BITS-1:0] bdrum_phase_ext = {bdrum_phase[BDRUM_PHASE_BITS-1:BDRUM_PHASE_SKIP_BIT+1], bdrum_phase[BDRUM_PHASE_SKIP_BIT-1:0]};
+	wire [GPHASE_BITS-1:0] bdrum_phase_ext = {1'b1, bdrum_phase[BDRUM_PHASE_BITS-1:BDRUM_PHASE_SKIP_BIT+1], bdrum_phase[BDRUM_PHASE_SKIP_BIT-1:0]};
+
+	wire [1:0] factor_b_src1 = factor_b_index[FACTOR_B_INDEX_BITS-1] ? 0 : {gphase[factor_b_index_b1], gphase[factor_b_index_b0]};
+	wire [1:0] factor_b_src2 = factor_b_index[FACTOR_B_INDEX_BITS-1] ? 0 : {bdrum_phase_ext[factor_b_index_b1], bdrum_phase_ext[factor_b_index_b0]};
+
+	wire [1:0] factor_b_src0 = bdrum_en ? factor_b_src2 : factor_b_src1;
 
 //	wire [1:0] factor_b_src = {gphase[{factor_b_index[FACTOR_B_INDEX_BITS-1-1:1], 1'b1}], 
 //	                           gphase[{factor_b_index[FACTOR_B_INDEX_BITS-1-1:1], 1'b0}]};
 
+
+
+	logic [1:0] factor_b_src;
+
+`ifdef USE_BDRUM
+	wire factor_b_overlay_en = bdrum_en && ((factor_b_index&~1) == (BDRUM_PHASE_SKIP_BIT&~1));
+
+	reg factor_b_borrow;
+	logic [2:0] factor_b_src_offset;
+	always_comb begin
+		factor_b_src_offset = 0;
+		if (factor_b_overlay_en) begin
+			factor_b_src_offset = bdrum_phase[BDRUM_PHASE_SKIP_BIT] ? 0 : ((BDRUM_PHASE_SKIP_BIT&1) ? -2 : -1);
+		end else if (!first_factor_b) begin
+			factor_b_src_offset = factor_b_borrow ? -1 : 0;
+		end
+	end
+
+	wire [2:0] factor_b_src_sum = factor_b_src0 + factor_b_src_offset;
+	assign factor_b_src = factor_b_src_sum[1:0];
+
+	always_ff @(posedge clk) factor_b_borrow <= factor_b_src_sum[2];
+`else
+	assign factor_b_src = factor_b_src0;
+`endif
+
+
+
 	always_ff @(posedge clk) if (en_eff) prev_factor_b_bit <= factor_b_src[1];
 	wire prev_factor_b_bit_eff = (state == 0) ? 0 : prev_factor_b_bit;
+
 
 	logic [1:0] factor_b_bits;
 	always_comb begin
 		factor_b_bits = 'X;
 		if (factor_b_index[FACTOR_B_INDEX_BITS-1]) factor_b_bits = 0; // factor_b_index < 0
 		else begin
-			if (factor_b_index[0] == 1) factor_b_bits = factor_b_src;
+			if (factor_b_index[0] == 1 || force_no_b_delay) factor_b_bits = factor_b_src;
 			else factor_b_bits = {factor_b_src[0], prev_factor_b_bit_eff}; // delay by one bit ==> left shift by one
 		end
 	end
@@ -514,7 +557,10 @@ module synth_scheduler  #(
 	synth_alu #(.FACTOR_A_BITS(FACTOR_A_BITS), .GPHASE_BITS(GPHASE_BITS), .OUT_ACC_BITS(OUT_ACC_BITS), .DELTA_SIGMA_BITS(DELTA_SIGMA_BITS)) alu(
 		.clk(clk), .reset(reset), .en(en_eff),
 
-		.src2_note_mul(src2_note_mul), .src2_pwm_offs(src2_pwm_offs), .src2_vol(src2_vol), .src2_slope_frac(src2_slope_frac), .out_acc_initial(out_acc_initial),
+		.src2_note_mul(src2_note_mul), .src2_pwm_offs(src2_pwm_offs), .src2_vol(src2_vol), .src2_slope_frac(src2_slope_frac),
+		//.src2_bdrum_phase(bdrum_phase[BDRUM_PHASE_BITS-1 -: ACC_BITS]),
+		.src2_bdrum_phase({1'b1, bdrum_phase[BDRUM_PHASE_BITS-1 -: (ACC_BITS-1)]}),
+		.out_acc_initial(out_acc_initial),
 		.src1_sel(src1_sel), .src2_sel(src2_sel), .src2_mod(src2_mod), .flags(flags), .res_sel(res_sel), .wes(wes),
 		.add_mask(add_mask),
 		.final_factor_b(0), .first_factor_b(first_factor_b), .factor_b(factor_b_bits),

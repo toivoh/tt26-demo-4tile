@@ -10,6 +10,7 @@
 
 `define USE_MUSIC
 `define USE_SCALES
+//`define USE_BDRUM
 
 `define USE_TUNNEL
 
