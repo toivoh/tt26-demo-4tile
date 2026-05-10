@@ -61,7 +61,7 @@ module scene1 #(
 	logic [X_BITS-1:0] sx, sy, sz;
 	logic [X_BITS-1:0] px, py, pz;
 	//logic [ROOM_BITS-1:0] nxp, nxn, nyp, nyn, nzp, nzn;
-	logic [2:0] m = 0;
+	wire [2:0] m = 0;
 	logic signed [X_BITS-1:0] tx, ty;
 	always_comb begin
 		tx = 'X; ty  = 'X;
