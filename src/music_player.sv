@@ -790,8 +790,8 @@ module music_player #(
 //	wire [4:0] voice_case = voice | (organ_chords_en ? {{2{!voice[4]}}, 3'b000}: 0);
 
 //	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 3;
-	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 4;
-//	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 5;
+//	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 4;
+	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 5;
 
 	//int temp1, temp2;
 	always_comb begin
