@@ -242,7 +242,7 @@ module synth_scheduler  #(
 		input wire [ACC_BITS-1:0] src2_note_mul, src2_pwm_offs, src2_vol, src2_slope_frac,
 		input wire [BDRUM_PHASE_BITS-1:0] bdrum_phase,
 		input wire [OCT_BITS-1:0] oct,
-		input wire saw, bdrum_en, force_no_b_delay, neg_pwm_offs,
+		input wire saw, high_saw, bdrum_en, force_no_b_delay, neg_pwm_offs,
 		input wire [NSHIFT_BITS-1:0] nshift,
 		input wire [`GAIN_SHR_BITS-1:0] gain_shr,
 
@@ -349,7 +349,7 @@ module synth_scheduler  #(
 	//wire [1:0] st = state[1:0];
 	wire [1:0] st = state[2:1];
 
-	wire [NSHIFT_BITS-1:0] nshift_eff = (saw && tri_part == 0) ? 0 : nshift;
+	wire [NSHIFT_BITS-1:0] nshift_eff = (saw && tri_part == 0) ? high_saw : nshift;
 
 	wire slope_do_shl2 = st < nshift_eff[NSHIFT_BITS-1:1];
 	wire slope_do_shl1 = (st == nshift_eff[NSHIFT_BITS-1:1]) && nshift_eff[0];

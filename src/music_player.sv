@@ -1181,6 +1181,8 @@ module music_player #(
 		//if (!(note_on && voice_on)) vol = 0;
 	end
 
+	wire high_saw = (pwm_en && melody_voice);
+
 	wire note_on_eff = note_on && voice_on && !((note_stop || note_stop_slow) && t_34_overflow);
 	wire [ACC_BITS-1:0] src1_out, src2_out;
 	synth_scheduler #(.OUT_ACC_BITS(OUT_ACC_BITS), .OCT_BITS(OCT_BITS), .STATE_BITS(STATE_BITS), .DELTA_SIGMA_BITS(DELTA_SIGMA_BITS)) sched(
@@ -1191,7 +1193,7 @@ module music_player #(
 		.first_voice(first_voice),
 		.state(state),
 		.src2_note_mul(multiplier), .src2_pwm_offs(pwm_offs), .src2_vol(vol), .src2_slope_frac(slope_frac), .out_acc_initial(out_acc_initial),
-		.oct(oct), .nshift(nshift), .gain_shr(gain_shr), .saw(saw), .neg_pwm_offs(neg_pwm_offs),
+		.oct(oct), .nshift(nshift), .gain_shr(gain_shr), .saw(saw), .high_saw(high_saw), .neg_pwm_offs(neg_pwm_offs),
 
 		.bdrum_phase('X), .bdrum_en(0), .force_no_b_delay(0),
 
@@ -1222,7 +1224,7 @@ module music_player #(
 		.first_voice(first_voice),
 		.state(state),
 		.src2_note_mul(multiplier), .src2_pwm_offs(pwm_offs), .src2_vol(vol), .src2_slope_frac(slope_frac), .out_acc_initial(out_acc_initial),
-		.oct(oct), .nshift(nshift), .gain_shr(gain_shr), .saw(saw),
+		.oct(oct), .nshift(nshift), .gain_shr(gain_shr), .saw(saw), .high_saw(high_saw), .neg_pwm_offs(neg_pwm_offs),
 
 		.bdrum_phase('X), .bdrum_en(0), .force_no_b_delay(0),
 
