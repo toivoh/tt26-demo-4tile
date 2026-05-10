@@ -596,6 +596,8 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 
 		.speedup(speedup),
 		.x0(x0), .y_in(full_y), .frame_t(frame_t),
+		.skip_out_acc_update(0), .gphase_override(0), .gphase_in('X),
+
 		.out_acc(sound_sample), .pwm_out(pwm_out)
 	);
 `else

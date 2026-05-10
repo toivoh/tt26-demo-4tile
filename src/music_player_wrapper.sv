@@ -14,6 +14,7 @@ module music_player_wrapper #(
 		OUT_ACC_BITS = 15,
 		MULTIPLIER_ADDITION_BITS = 3,
 		PWM_BITS = 10,
+		GPHASE_IN_BITS = 19,
 
 `ifdef USE_LINE_BUFFER
 		USE_LBUF = 1,
@@ -34,11 +35,19 @@ module music_player_wrapper #(
 		input wire signed [9:0] y_in,
 		input wire [FRAME_T_BITS-1:0] frame_t,
 
+		input wire skip_out_acc_update,
+		input wire gphase_override,
+		input wire [GPHASE_IN_BITS-1:0] gphase_in,
+
 		output wire [T_BITS+T_FRAC_BITS-1:0] t,
 
 		output wire [OUT_ACC_BITS-1:0] out_acc,
 		output wire new_sample,
-		output wire pwm_out
+		output wire pwm_out,
+
+		output wire odd_sample,
+		output wire new_voice_sample, new_voice_sample_pregain,
+		output wire signed [ACC_BITS-1:0] acc
 	);
 
 	localparam SAMPLE0_X = -960;
@@ -55,7 +64,7 @@ module music_player_wrapper #(
 	wire signed [5:0] x_voice = x0 >> 5;
 	wire [5:0] state = {last_voice, x0[4:0]};
 
-	wire odd_sample = (x_voice >= SAMPLE1_X_VOICE);
+	assign odd_sample = (x_voice >= SAMPLE1_X_VOICE);
 	assign voice = x_voice - (odd_sample ? SAMPLE1_X_VOICE : SAMPLE0_X_VOICE);
 
 	assign new_sample = last_voice && (state[4:0] == 0);
@@ -110,8 +119,12 @@ module music_player_wrapper #(
 
 		.t(t), .first_voice(voice==0), .voice(voice), .state(state),
 		.out_acc_initial(out_acc_initial),
+		.skip_out_acc_update(skip_out_acc_update), .gphase_in(gphase_in), .gphase_override(gphase_override),
 
-		.out_acc(out_acc)
+		.out_acc(out_acc),
+
+		.new_voice_sample(new_voice_sample), .new_voice_sample_pregain(new_voice_sample_pregain),
+		.acc(acc)
 	);
 
 	// PWM
