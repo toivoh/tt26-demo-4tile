@@ -414,7 +414,8 @@ module music_player #(
 		output wire [9:0] multiplier_out,
 		output wire [OCT_BITS-1:0] oct_out,
 		output wire [1:0] gain_shr_out,
-		output wire [ACC_BITS-1:0] vol_out
+		output wire [ACC_BITS-1:0] vol_out,
+		output wire [1:0] delta_mul_out
 	);
 
 	localparam NSHIFT_BITS = 3;
@@ -790,8 +791,8 @@ module music_player #(
 //	wire [4:0] voice_case = voice | (organ_chords_en ? {{2{!voice[4]}}, 3'b000}: 0);
 
 //	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 3;
-//	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 4;
-	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 5;
+	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 4;
+//	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 5;
 
 	//int temp1, temp2;
 	always_comb begin
@@ -860,6 +861,11 @@ module music_player #(
 					if (pwm_en) begin
 						pwm_offs = pwm_offs_t[8:0] + 256;
 						neg_pwm_offs = pwm_offs_t[9];
+/*
+						delta_note = 2;
+						//delta_note = (mel_note7 == 0 || mel_note7 == 2) ? 4 : 5;
+						if (voice[0]) delta_note = 0;
+*/
 					end
 `endif
 				end else begin
@@ -1126,11 +1132,13 @@ module music_player #(
 	always_comb begin
 		mul0_override = 0;
 		delta_mul_override = 0;
+		/*
 		if (gphase_override) begin
 			//if (factor_b_index[4:1] > 4) mul0_override = 1;
-			if (factor_b_index[4:1] > 5) mul0_override = 1;
+			//if (factor_b_index[4:1] > 5) mul0_override = 1;
 			//if (factor_b_index[4:1] > 6) mul0_override = 1;
 		end
+		*/
 	end
 
 
@@ -1244,4 +1252,5 @@ module music_player #(
 	assign oct_out = oct;
 	assign gain_shr_out = gain_shr;
 	assign vol_out = vol;
+	assign delta_mul_out = delta_mul;
 endmodule : music_player

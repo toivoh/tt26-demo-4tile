@@ -39,6 +39,7 @@ module music_player_wrapper #(
 		input wire gphase_override,
 		input wire [GPHASE_IN_BITS-1:0] gphase_in,
 
+		output logic [4:0] voice,
 		output wire [T_BITS+T_FRAC_BITS-1:0] t,
 
 		output wire [OUT_ACC_BITS-1:0] out_acc,
@@ -47,7 +48,8 @@ module music_player_wrapper #(
 
 		output wire odd_sample,
 		output wire new_voice_sample, new_voice_sample_pregain,
-		output wire signed [ACC_BITS-1:0] acc
+		output wire signed [ACC_BITS-1:0] acc,
+		output wire [1:0] delta_mul_out
 	);
 
 	localparam SAMPLE0_X = -960;
@@ -58,7 +60,6 @@ module music_player_wrapper #(
 
 	// Calculate voice
 	// ------------
-	logic [4:0] voice;
 	wire last_voice = (voice == 24);
 
 	wire signed [5:0] x_voice = x0 >> 5;
@@ -124,7 +125,7 @@ module music_player_wrapper #(
 		.out_acc(out_acc),
 
 		.new_voice_sample(new_voice_sample), .new_voice_sample_pregain(new_voice_sample_pregain),
-		.acc(acc)
+		.acc(acc), .delta_mul_out(delta_mul_out)
 	);
 
 	// PWM
