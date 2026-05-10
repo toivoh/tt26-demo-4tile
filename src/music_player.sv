@@ -490,7 +490,7 @@ module music_player #(
 				melody_on = 1; echo_on = 1; bass_on = 0; chords_on = 0; arp_on = 0;
 				chords_on = 1; // TODO: Do I want this?
 				if (part[2]) begin
-					melody_saw_en = 1; pwm_en = 1;
+					melody_saw_en = 1; //pwm_en = 1;
 					lower_end = 1;
 					chords_on = 1;
 					force_pattern3 = 1;
@@ -583,7 +583,7 @@ module music_player #(
 			2: begin
 				// 4/4 melody
 				scale = 0;
-				melody_saw_en = 1; pwm_en = 1;
+				melody_saw_en = 1; //pwm_en = 1;
 				melody_on = 1; echo_on = 1; bass_on = 1; chords_on = 1; arp_on = 0;
 
 				if (final_measure && !melody_voice) scale = 4;
@@ -1181,7 +1181,7 @@ module music_player #(
 		//if (!(note_on && voice_on)) vol = 0;
 	end
 
-	wire high_saw = (pwm_en && melody_voice);
+	wire high_saw = 0;//(pwm_en && melody_voice);
 
 	wire note_on_eff = note_on && voice_on && !((note_stop || note_stop_slow) && t_34_overflow);
 	wire [ACC_BITS-1:0] src1_out, src2_out;
