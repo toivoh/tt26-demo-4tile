@@ -19,28 +19,24 @@ project:
   # Don't forget to also update `PROJECT_SOURCES` in test/Makefile.
   source_files:
     - "subdivider_pl.sv"
-    - "subdiv_pl_tracer.sv"
-    - "scene1.sv"
-    - "trace_state_rs.sv"
+    - "raster_scan.sv"
+    - "synth_test.sv"
     - "matrix_calc_pl.sv"
-
     - "vga_pl_tracer.sv"
     - "view_calc_pl.sv"
-
-    - "synth_test.sv"
-    - "memories.sv"
-    - "music_player.sv"
-    - "project_pl.v"
-
-    - "trace_state.sv"
-    - "subdet.sv"
-    - "interval_buffer2.sv"
-    - "raster_scan.sv"
-    - "jumper.sv"
-
     - "music_player_wrapper.sv"
     - "buffered_pl_tracer.sv"
     - "room_navigator.sv"
+    - "trace_state.sv"
+    - "subdet.sv"
+    - "project_pl.v"
+    - "interval_buffer2.sv"
+    - "memories.sv"
+    - "jumper.sv"
+    - "scene1.sv"
+    - "trace_state_rs.sv"
+    - "subdiv_pl_tracer.sv"
+    - "music_player.sv"
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 # This section is for the datasheet/website. Use descriptive names (e.g., RX, TX, MOSI, SCL, SEG_A, etc.).
