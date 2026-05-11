@@ -34,7 +34,7 @@
 
   "//": "Configuration docs: https://librelane.readthedocs.io/en/latest/reference/configuration.html",
 
-  "SYNTH_STRATEGY": "AREA 0",
+  "SYNTH_STRATEGY": "AREA 2",
   "USE_LIGHTER": 1,
   "//SYNTH_CLOCKGATE_MIN_WIDTH": 1,
   "//SYNTH_CLOCKGATE_POSEDGE_ICG": "sky130_fd_sc_hd__dlclkp_1/GATE/CLK/GCLK",
