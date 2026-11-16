@@ -403,6 +403,10 @@ module music_player #(
 		input wire gphase_override,
 		input wire [GPHASE_IN_BITS-1:0] gphase_in,
 
+		input wire scale_override_en,
+		input wire [2:0] scale_override,
+		input wire nonharmonic_override,
+
 		output wire [OUT_ACC_BITS-1:0] out_acc,
 
 		output wire new_voice_sample, new_voice_sample_pregain,
@@ -415,16 +419,29 @@ module music_player #(
 		output wire [OCT_BITS-1:0] oct_out,
 		output wire [1:0] gain_shr_out,
 		output wire [ACC_BITS-1:0] vol_out,
-		output wire [1:0] delta_mul_out
+		output wire [1:0] delta_mul_out,
+		output wire [2:0] note_start_stop_out,
+		output wire organ_chords_en_out
 	);
 
 	localparam NSHIFT_BITS = 3;
 
-	// TODO: remove
 `ifdef FPGA
+/*
+`ifdef USE_1_CYCLE_PER_PIXEL
+	// Stay at BASE_OCT = 1 if using FPGA with plain USE_MUSIC_PLAYER
+	localparam BASE_OCT = 2; // BASE_OCT > 1 might break highest octave?
+`else
+	localparam BASE_OCT = 1;
+`endif
+*/
+	localparam BASE_OCT = 1;
+`else
+`ifdef USE_1_CYCLE_PER_PIXEL
 	localparam BASE_OCT = 1;
 `else
 	localparam BASE_OCT = 0;
+`endif
 `endif
 
 	localparam BASS_OCT = BASE_OCT;
@@ -621,6 +638,11 @@ module music_player #(
 		//echo_on = 0;
 		time_echo_on = echo_on;
 
+		if (scale_override_en) begin
+			scale = scale_override;
+			nonharmonic = nonharmonic_override;
+		end
+
 /*
 		en_34 = 0; melody_on = 0; echo_on = 0; bass_on = 0; chords_on = 0; arp_on = 0;
 		scale = 0;
@@ -790,9 +812,13 @@ module music_player #(
 	wire [4:0] voice_case = voice | (organ_chords_en ? (voice[3] << 4): 0);
 //	wire [4:0] voice_case = voice | (organ_chords_en ? {{2{!voice[4]}}, 3'b000}: 0);
 
-//	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 3;
-	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 4;
-//	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> 5;
+	localparam PWM_RSHIFT = 4;
+
+`ifdef USE_T_FOR_PWM
+	wire [ACC_BITS-1:0] pwm_offs_t = t >> PWM_RSHIFT;
+`else
+	wire [ACC_BITS-1:0] pwm_offs_t = gphase >> PWM_RSHIFT;
+`endif
 
 	//int temp1, temp2;
 	always_comb begin
@@ -967,6 +993,7 @@ module music_player #(
 					if (delta_note_from_chord_index == 0) delta_oct = BASE_OCT-BASS_OCT;
 					else delta_oct = BASE_OCT-BASS_OCT + 1;
 					delta_oct4 = voice[3];
+					instrument = 5;
 				end
 
 				//if (chords_stutter_en) nshift = t34_int[1] ? 2 : 4;
@@ -1253,4 +1280,6 @@ module music_player #(
 	assign gain_shr_out = gain_shr;
 	assign vol_out = vol;
 	assign delta_mul_out = delta_mul;
+	assign note_start_stop_out = {note_start, note_stop, note_stop_slow};
+	assign organ_chords_en_out = organ_chords_en;
 endmodule : music_player

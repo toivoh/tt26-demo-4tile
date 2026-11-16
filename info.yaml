@@ -1,15 +1,14 @@
 # Tiny Tapeout project information
 project:
-  title:        "Underflow Cubed [TTSKY26a demo competition]"      # Project title
+  title:        "Underflow Cubed [GF180 version]"      # Project title
   author:       "Toivo Henningsson"      # Your name
   discord:      "possible_realities"      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
-  description:  "Four tile demo for to the TTSKY26a demo competition"      # One line description of what your project does
+  description:  "Four tile demo for to the TTSKY26a demo competition, GF180 version"      # One line description of what your project does
   language:     "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
-  clock_hz:     50400000       # Clock frequency in Hz (or 0 if not applicable)
+  clock_hz:     18112500       # Clock frequency in Hz (or 0 if not applicable)
 
   # How many tiles your design occupies? A single tile is about 167x108 uM.
-#  tiles: "1x2"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
-  tiles: "2x2"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
+  tiles: "3x2"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
 
   # Your top module name must start with "tt_um_". Make it unique by including your github username:
   top_module:  "tt_um_toivoh_demo_4tile"
@@ -18,25 +17,29 @@ project:
   # Source files must be in ./src and you must list each source file separately, one per line.
   # Don't forget to also update `PROJECT_SOURCES` in test/Makefile.
   source_files:
-    - "jumper.sv"
-    - "scene1.sv"
-    - "trace_state_rs.sv"
-    - "subdivider_pl.sv"
-    - "memories.sv"
-    - "subdiv_pl_tracer.sv"
     - "raster_scan.sv"
-    - "view_calc_pl.sv"
-    - "music_player_wrapper.sv"
-    - "interval_buffer2.sv"
-    - "trace_state.sv"
     - "subdet.sv"
-    - "synth_test.sv"
-    - "matrix_calc_pl.sv"
-    - "vga_pl_tracer.sv"
-    - "project_pl.v"
-    - "music_player.sv"
+    - "trace_state.sv"
+    - "interval_buffer2.sv"
+    - "jumper.sv"
+    - "subdivider_pl.sv"
+    - "subdiv_pl_tracer.sv"
     - "buffered_pl_tracer.sv"
+    - "vga_pl_tracer.sv"
+    - "trace_state_rs.sv"
+    - "scene1.sv"
+    - "project_pl.v"
+    - "memories.sv"
+    - "matrix_calc_pl.sv"
+    - "view_calc_pl.sv"
     - "room_navigator.sv"
+    - "music_player_wrapper.sv"
+    - "music_player.sv"
+    - "synth_test.sv"
+
+    - "shift_register.sv"
+    - "line_buffer.sv"
+    - "line_double_buffer.sv"
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 # This section is for the datasheet/website. Use descriptive names (e.g., RX, TX, MOSI, SCL, SEG_A, etc.).

@@ -39,6 +39,10 @@ module music_player_wrapper #(
 		input wire gphase_override,
 		input wire [GPHASE_IN_BITS-1:0] gphase_in,
 
+		input wire scale_override_en,
+		input wire [2:0] scale_override,
+		input wire nonharmonic_override,
+
 		output logic [4:0] voice,
 		output wire [T_BITS+T_FRAC_BITS-1:0] t,
 
@@ -52,11 +56,17 @@ module music_player_wrapper #(
 		output wire [1:0] delta_mul_out
 	);
 
+`ifdef USE_1_CYCLE_PER_PIXEL
+	localparam SAMPLE0_X = -960 >>> 1;
+`else
 	localparam SAMPLE0_X = -960;
 	localparam SAMPLE1_X = SAMPLE0_X + 800;
+`endif
 
 	localparam SAMPLE0_X_VOICE = SAMPLE0_X >>> 5;
+`ifndef USE_1_CYCLE_PER_PIXEL
 	localparam SAMPLE1_X_VOICE = SAMPLE1_X >>> 5;
+`endif
 
 	// Calculate voice
 	// ------------
@@ -65,8 +75,13 @@ module music_player_wrapper #(
 	wire signed [5:0] x_voice = x0 >> 5;
 	wire [5:0] state = {last_voice, x0[4:0]};
 
+`ifdef USE_1_CYCLE_PER_PIXEL
+	assign odd_sample = 1'b0; // Forces lsb of t_y to zero below
+	assign voice = x_voice - SAMPLE0_X_VOICE;
+`else
 	assign odd_sample = (x_voice >= SAMPLE1_X_VOICE);
 	assign voice = x_voice - (odd_sample ? SAMPLE1_X_VOICE : SAMPLE0_X_VOICE);
+`endif
 
 	assign new_sample = last_voice && (state[4:0] == 0);
 
@@ -101,7 +116,7 @@ module music_player_wrapper #(
 			default: out_acc_initial = 'X;
 		endcase
 */
-		case (speedup[1:0]) // TODO: use speedup[2] too?
+		case (speedup[2:0])
 			0: out_acc_initial = -400;
 			1: out_acc_initial = -376;
 			2: out_acc_initial = -352;
@@ -121,6 +136,7 @@ module music_player_wrapper #(
 		.t(t), .first_voice(voice==0), .voice(voice), .state(state),
 		.out_acc_initial(out_acc_initial),
 		.skip_out_acc_update(skip_out_acc_update), .gphase_in(gphase_in), .gphase_override(gphase_override),
+		.scale_override_en(scale_override_en), .scale_override(scale_override), .nonharmonic_override(nonharmonic_override),
 
 		.out_acc(out_acc),
 

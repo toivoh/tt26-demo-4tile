@@ -44,22 +44,23 @@ endmodule : axis_scan
 
 
 module raster_scan #(
+		parameter HALVE_XRES = 0,
 		// X
-		//                             state
-		parameter FP_W = 16,      // 0
-		parameter SYNC_W = 96,    // 1
-		parameter BP_W = 48,      // 2
-		parameter ACTIVE_W = 640, // 3
+		//                                         state
+		parameter FP_W     =  16 >> HALVE_XRES, // 0
+		parameter SYNC_W   =  96 >> HALVE_XRES, // 1
+		parameter BP_W     =  48 >> HALVE_XRES, // 2
+		parameter ACTIVE_W = 640 >> HALVE_XRES, // 3
 
 		parameter USE_DOUBLE_X = 0,
 		parameter USE_LBUF = 0,
 
 		// Y
 		//                                       state
-		parameter BP_H     = 33  >> USE_LBUF, // 0
+		parameter BP_H     =  33 >> USE_LBUF, // 0
 		parameter ACTIVE_H = 480 >> USE_LBUF, // 1
-		parameter FP_H     = 10  >> USE_LBUF, // 2
-		parameter SYNC_H   = 2   >> USE_LBUF, // 3
+		parameter FP_H     =  10 >> USE_LBUF, // 2
+		parameter SYNC_H   =   2 >> USE_LBUF, // 3
 
 		// Don't change
 		parameter X0 = -(FP_W + SYNC_W + BP_W) - ACTIVE_W/2,
@@ -73,7 +74,7 @@ module raster_scan #(
 		output wire signed [9:0] y, y_orig,
 		output wire [1:0] x_state,
 		output wire [1:0] y_state,
-		output wire active, hsync, vsync, new_line, new_frame, x_active, y_active, active_line_done, y_hit, x_active_start
+		output wire active, hsync, vsync, new_line, new_frame, x_active, y_active, active_line_done, y_hit, x_active_start, x_fast
 	);
 
 	localparam X_BITS = 10;
@@ -82,7 +83,6 @@ module raster_scan #(
 
 	wire signed [X_BITS-1:0] x_raw;
 
-	wire x_fast;
 	synth_speedup synth_speedup_inst(
 		.speedup(speedup), .x(x_raw[3:0]),
 		.fast(x_fast)

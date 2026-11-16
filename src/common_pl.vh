@@ -12,12 +12,21 @@
 `define USE_SCALES
 //`define USE_BDRUM
 `define USE_WF_PWM
+//`define USE_T_FOR_PWM // use for 1-tile demo, not 4-tile demo (needed for visualization of PWM)
 
 //`define DUPLICATE_SYNTH
 
 `define USE_TUNNEL
 
 `define USE_CURR_X_FIX_BITS
+
+`define USE_1_CYCLE_PER_PIXEL
+`define USE_DOUBLE_BUFFER
+`define DOUBLE_BUFFER_DEPTH 24
+//`define DOUBLE_BUFFER_DEPTH 28
+`define LOG2_MAX_LINEREPS 1
+
+`define USE_DOUBLE_CONSUME_PIXEL
 
 //`define CYCLE_FLAGS
 

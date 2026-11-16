@@ -244,10 +244,17 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 	wire signed [SCAN_Y_BITS-1:0] full_y, y_orig;
 	wire signed [VIS_Y_BITS-1:0] y = full_y;
 	//wire active, x_active, y_active;
-	wire new_line, x_active_start, y_hit;
+	wire new_line, x_active_start, y_hit, x_fast;
 	//raster_scan_c rs(
 	raster_scan #(
+`ifdef USE_1_CYCLE_PER_PIXEL
+		//.USE_DOUBLE_X(0),
+		.USE_DOUBLE_X(1), .HALVE_XRES(1),
+`else
 		.USE_DOUBLE_X(1),
+`endif
+
+
 `ifdef USE_LINE_BUFFER
 		.USE_LBUF(1)
 `else
@@ -257,7 +264,7 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 		.clk(clk), .reset(reset), .en(1'b1), .speedup(speedup),
 		.force_x_at_thresh(force_x_at_thresh), .force_y_at_thresh(force_y_at_thresh),
 		.x(x0), .y(full_y), .y_orig(y_orig),
-		.active(active), .hsync(hsync), .vsync(vsync), .new_frame(new_frame), .active_line_done(new_line), .new_line(new_vga_line), .x_active_start(x_active_start), .y_hit(y_hit),
+		.active(active), .hsync(hsync), .vsync(vsync), .new_frame(new_frame), .active_line_done(new_line), .new_line(new_vga_line), .x_active_start(x_active_start), .y_hit(y_hit), .x_fast(x_fast),
 		.x_active(x_active), .y_active(y_active)
 	);
 
@@ -309,10 +316,31 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 	assign axis_sizes_initial[1] = 8 << 3;
 	assign axis_sizes_initial[2] = 8 << 3;
 
-
+`ifdef USE_1_CYCLE_PER_PIXEL
+`ifdef USE_DOUBLE_CONSUME_PIXEL
+	wire [1:0] consume_pixel = x_active ? (x_fast ? 2 : 1) : '0;
+`else
+	wire consume_pixel = x_active;
+`endif
+`else
 	wire consume_pixel = x0[0] && x_active;
+`endif
 
+`ifdef USE_DOUBLE_BUFFER
+	reg [`LOG2_MAX_LINEREPS-1:0] swap_counter;
+	always_ff @(posedge clk) begin
+		if (reset) begin
+			swap_counter <= '0;
+		end if (new_line) begin
+			if (swap_counter == '0) swap_counter <= 1;
+			else swap_counter <= swap_counter - 1;
+		end
+	end
+
+	wire reset_view_calc = (new_line && swap_counter == '0) || reset;
+`else
 	wire reset_view_calc = new_line || reset;
+`endif
 
 	wire reset_dxf, reset_i_d2;
 	wire [POS_BITS-1:0] i_d2_init, i2_init;
@@ -334,6 +362,10 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 	//wire [VALUE_BITS-1:0] curr_value;
 	buffered_pl_tracer #( `parameters_forward ) btracer(
 		.clk(clk), .reset((reset_view_calc || !view_calc_done) && !force_y_at_thresh), .reset_dxf(reset_dxf), .reset_i_d2(reset_i_d2),
+`ifdef USE_DOUBLE_BUFFER
+		.reset_dbuf(reset),
+		.do_swap(reset_view_calc), .return_mode_en(!hsync),
+`endif
 
 		.ctrl_flags(ctrl_flags),
 		.scene_flags(scene_flags),
@@ -597,6 +629,7 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 		.speedup(speedup),
 		.x0(x0), .y_in(full_y), .frame_t(frame_t),
 		.skip_out_acc_update(0), .gphase_override(0), .gphase_in('X),
+		.scale_override_en(0), .scale_override('X), .nonharmonic_override('X),
 
 		.out_acc(sound_sample), .pwm_out(pwm_out)
 	);

@@ -11,6 +11,11 @@ module buffered_pl_tracer #(
 		`derived_parameter_definitions
 	) (
 		input wire clk, reset, reset_dxf, reset_i_d2,
+`ifdef USE_DOUBLE_BUFFER
+		input wire reset_dbuf, // reset once is enough
+		input do_swap, return_mode_en, // control line_double_buffer: see comments at the top of line_double_buffer.sv
+`endif
+
 		input wire [`CTRL_FLAG_BITS-1:0] ctrl_flags,
 		input wire [`SCENE_FLAG_BITS-1:0] scene_flags,
 		input wire [`FRAME_T_BITS-1:0] frame_t,
@@ -45,8 +50,11 @@ module buffered_pl_tracer #(
 		input wire [VALUE_BITS-1:0]  initial_value,
 		input wire [LENGTH_BITS-1:0] initial_length,
 
+`ifdef USE_DOUBLE_CONSUME_PIXEL
+		input wire [1:0] consume_pixel, // can be 0-2, don't use 3
+`else
 		input wire consume_pixel,
-		//output wire consume_pixel,
+`endif
 
 		// Outputs from buffered_tracer that need to be forwarded to the top wrapper, for emit and debug
 		`buffered_tracer_output_definitions
@@ -82,10 +90,14 @@ module buffered_pl_tracer #(
 	// -------
 	wire [1:0] value_emit_a = ~wall_face_axis;
 
+`ifdef USE_DOUBLE_BUFFER
+	wire doffs = y[1];
+`else
 `ifdef FPGA
 	wire doffs = y[1];
 `else
 	wire doffs = y[0];
+`endif
 `endif
 
 	wire fs = dx_signs_td[wall_face_axis];
@@ -99,6 +111,7 @@ module buffered_pl_tracer #(
 
 	assign value_emit = hurry ? 0 : (ctrl_flags[`CTRL_FLAG_ALT_SHADING] ? value_emit_b : value_emit_a);
 
+`ifndef USE_DOUBLE_BUFFER
 	// Interval buffer
 	// ---------------
 	// TODO: better parameter values?
@@ -111,6 +124,18 @@ module buffered_pl_tracer #(
 		.behind(hurry),
 		.tail_index_out(tail_index_out)
 	);
+`else
+	// Double buffer
+	line_double_buffer #(.LENGTH_BITS(LENGTH_BITS), .SHORT_LENGTH_BITS(SHORT_LENGTH_BITS), .DEPTH(`DOUBLE_BUFFER_DEPTH), .VALUE_BITS(2)) double_buffer(
+		.clk(clk), .reset(reset_dbuf), .do_swap(do_swap), .return_mode_en(return_mode_en),
+
+		.emit(emit), .length_m1_emit(length_m1_emit), .value_emit(value_emit), .ack_emit(ack_emit),
+		.consume_pixel(consume_pixel), .curr_value(curr_value)
+	);
+	assign hurry = '0; // Don't hurry with line buffer
+	// Only used in verilator/model_test.cpp
+	assign tail_index_out = '1;
+`endif
 
 	assign consume_pixel_out = consume_pixel;
 	assign initial_value_out = initial_value;
