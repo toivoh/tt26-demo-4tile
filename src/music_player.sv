@@ -569,9 +569,11 @@ module music_player #(
 					//chords_loud = 1;
 					arp_on = (pattern == 3);
 					chords_snh_en = 1;
+`ifndef USE_TWEAKED_MUSIC
 					if (final_measure) begin
 						arp_high = 1; arp_stop_slow = 1;
 					end
+`endif
 				//end else if (pattern == 0) begin
 				//end else if (pattern[0] == 0) begin
 				end else begin
@@ -591,6 +593,13 @@ module music_player #(
 						//chords_on = 0;
 					end
 				end
+
+`ifdef USE_TWEAKED_MUSIC
+				if (final_measure) begin
+					arp_high = 1; arp_stop_slow = 1;
+				end
+`endif
+
 /*
 				// arp -> bass -> +chords -> +arp
 				bass_on = (pattern != 0);

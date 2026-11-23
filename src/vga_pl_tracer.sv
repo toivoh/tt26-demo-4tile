@@ -19,6 +19,7 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 		input wire force_x_at_thresh, force_y_at_thresh,
 		input wire [2:0] speedup,
 		input wire interlace_enable,
+		input wire [1:0] speedup_frames,
 
 		output wire [VALUE_BITS-1:0] value_out,
 		output logic [5:0] rgb_out,
@@ -50,6 +51,43 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 	assign frame_t_out = frame_t;
 
 	wire view_calc_done;
+
+
+	// Frame time stepping
+	// ===================
+	wire new_frame;
+
+	reg [1:0] ft_low;
+	always_ff @(posedge clk) begin
+		if (reset) ft_low <= 0;
+		else ft_low <= ft_low + new_frame;
+	end
+	wire double_frame_step = (ft_low < speedup_frames) || (speedup_frames == 3);
+
+`ifdef FPGA
+	localparam DOUBLE_STEP = 1;
+`else
+	localparam DOUBLE_STEP = 0;
+`endif
+	localparam DELTA_T = 1 << DOUBLE_STEP;
+
+	always_ff @(posedge clk) begin
+		if (reset || (frame_t >> (1+DOUBLE_STEP) == ((4*6+1)*512-1) >> (1+DOUBLE_STEP))) frame_t <= `INITIAL_FRAME_T; // Use a two/four-frame window so that we don't miss the reset
+//		if (reset || (frame_t == ((4*6+1)*512-DELTA_T))) frame_t <= `INITIAL_FRAME_T;
+//		if (reset || (frame_t == ((4*6+2)*512))) frame_t <= '0;
+//		if (reset || (frame_t == ((4*6+2)*512-DELTA_T))) frame_t <= '0;
+//		if (reset || (frame_t == ((4*6+2)*512-DELTA_T))) frame_t <= 4*512;
+/*
+`ifdef FPGA
+		else frame_t <= frame_t + {new_frame, 1'b0};
+`else
+		else frame_t <= frame_t + new_frame;
+`endif
+		*/
+		else frame_t <= frame_t + (({2'b00, new_frame} << double_frame_step) << DOUBLE_STEP);
+	end
+
+	wire signed [X_BITS-1:0] delta_x2_step = double_frame_step ? -2 : -1;
 
 
 	// Sequence
@@ -90,7 +128,7 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 
 		delta_x[0] =  0;
 		delta_x[1] =  0;
-		delta_x[2] = -1; interlace_en = 1;
+		delta_x[2] = delta_x2_step; interlace_en = 1;
 
 		palette = 0;
 		inverse_video = 0;
@@ -139,7 +177,7 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 				x_corner_initial[1] = (-128+16)*2;
 				/*
 				if (part_eff[2]) begin
-					delta_x[2] = -2; interlace_en = 0;
+					delta_x[2] = delta_x2_step << 1; interlace_en = 0;
 					palette = 2;
 				end
 				*/
@@ -168,7 +206,7 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 				ctrl_flags[`CTRL_FLAG_ALT_SHADING] = 1;
 
 				x_corner_initial[1] = 128+32;
-				delta_x[2] = -2; interlace_en = 0;
+				delta_x[2] = delta_x2_step << 1; interlace_en = 0;
 			end
 			3: begin
 				palette = 0;
@@ -198,7 +236,7 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 				scene_flags = 1 << (`SCENE_FLAG_TUNNEL) | (1 << `SCENE_FLAG_NARROW);
 
 				x_corner_initial[1] = 128+32;
-				delta_x[2] = -2; interlace_en = 0;
+				delta_x[2] = delta_x2_step << 1; interlace_en = 0;
 			end
 			7: begin
 				// Extra scene
@@ -277,25 +315,6 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 	// ======
 	//localparam T_BITS = 9; // Increasing it to 10 makes rotation jittery for some reason? TODO: why?
 //	localparam T_BITS = DXF_FRAC_BITS+2;
-
-`ifdef FPGA
-	localparam DELTA_T = 2;
-`else
-	localparam DELTA_T = 1;
-`endif
-
-	always_ff @(posedge clk) begin
-		if (reset || (frame_t == ((4*6+1)*512-DELTA_T))) frame_t <= `INITIAL_FRAME_T;
-//		if (reset || (frame_t == ((4*6+2)*512))) frame_t <= '0;
-//		if (reset || (frame_t == ((4*6+2)*512-DELTA_T))) frame_t <= '0;
-//		if (reset || (frame_t == ((4*6+2)*512-DELTA_T))) frame_t <= 4*512;
-`ifdef FPGA
-		else frame_t <= frame_t + {new_frame, 1'b0};
-`else
-		else frame_t <= frame_t + new_frame;
-`endif
-	end
-
 
 	wire matrix_running;
 

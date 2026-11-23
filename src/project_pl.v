@@ -34,7 +34,9 @@ module tt_um_toivoh_demo_4tile #(
 	wire [15:0] sound_sample;
 	wire pwm_out;
 	vga_pl_tracer #( `parameters_forward ) vtracer(
-		.clk(clk), .reset(reset), .speedup(ui_in[2:0]), .interlace_enable(!ui_in[3]),
+		.clk(clk), .reset(reset), .speedup(ui_in[2:0]),
+		.interlace_enable(0), //.interlace_enable(!ui_in[3]), // Don't use interlace in gf180 version; we don't get 60 fps with nonrepeated lines anyway
+		.speedup_frames(ui_in[4:3]),
 		.force_x_at_thresh(ui_in[6]), .force_y_at_thresh(ui_in[7]),
 		.value_out(value), .rgb_out(rgb), .hsync(hsync), .vsync(vsync),
 		.sound_sample(sound_sample), .pwm_out(pwm_out)
