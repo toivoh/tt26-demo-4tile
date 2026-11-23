@@ -55,8 +55,6 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 
 	// Frame time stepping
 	// ===================
-	wire new_frame;
-
 	reg [1:0] ft_low;
 	always_ff @(posedge clk) begin
 		if (reset) ft_low <= 0;
