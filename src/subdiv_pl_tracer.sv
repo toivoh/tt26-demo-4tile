@@ -411,7 +411,8 @@ module subdiv_pl_tracer #(
 
 	reg prev_descend;
 	always_ff @(posedge clk) begin
-		prev_descend <= descend;
+		if (reset) prev_descend <= 0;
+		else prev_descend <= descend;
 	end
 
 	wire [1:0] prev_face_axis;

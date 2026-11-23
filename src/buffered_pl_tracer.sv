@@ -14,6 +14,11 @@ module buffered_pl_tracer #(
 `ifdef USE_DOUBLE_BUFFER
 		input wire reset_dbuf, // reset once is enough
 		input do_swap, return_mode_en, // control line_double_buffer: see comments at the top of line_double_buffer.sv
+
+		input wire emit_ext_en,
+		input wire emit_ext,
+		input wire [LENGTH_BITS-1:0] length_m1_emit_ext,
+		input wire [VALUE_BITS-1:0] value_emit_ext,
 `endif
 
 		input wire [`CTRL_FLAG_BITS-1:0] ctrl_flags,
@@ -55,6 +60,7 @@ module buffered_pl_tracer #(
 `else
 		input wire consume_pixel,
 `endif
+		input wire consume_pixel_tracer,
 
 		// Outputs from buffered_tracer that need to be forwarded to the top wrapper, for emit and debug
 		`buffered_tracer_output_definitions
@@ -66,7 +72,7 @@ module buffered_pl_tracer #(
 	subdiv_pl_tracer #( `parameters_forward ) tracer(
 		.clk(clk), .reset(reset), .reset_dxf(reset_dxf), .reset_i_d2(reset_i_d2),
 		.hurry(hurry),
-		.ctrl_flags(ctrl_flags), .scene_flags(scene_flags), .consume_pixel(consume_pixel), .frame_t(frame_t), .interlace_mask(interlace_mask),
+		.ctrl_flags(ctrl_flags), .scene_flags(scene_flags), .consume_pixel(consume_pixel_tracer), .frame_t(frame_t), .interlace_mask(interlace_mask),
 
 		.i_d2_init(i_d2_init), .i2_init(i2_init),
 		.update_dx_ext(update_dx_ext), .update_dx1_ext(update_dx1_ext), .next_update_dx1_ext(next_update_dx1_ext), .ddx_shl_ext(ddx_shl_ext), .ddx_sign_ext(ddx_sign_ext), .update_dx_ext_mask(update_dx_ext_mask),
@@ -129,7 +135,10 @@ module buffered_pl_tracer #(
 	line_double_buffer #(.LENGTH_BITS(LENGTH_BITS), .SHORT_LENGTH_BITS(SHORT_LENGTH_BITS), .DEPTH(`DOUBLE_BUFFER_DEPTH), .VALUE_BITS(2)) double_buffer(
 		.clk(clk), .reset(reset_dbuf), .do_swap(do_swap), .return_mode_en(return_mode_en),
 
-		.emit(emit), .length_m1_emit(length_m1_emit), .value_emit(value_emit), .ack_emit(ack_emit),
+		.emit(          emit_ext_en ? emit_ext           : emit),
+		.length_m1_emit(emit_ext_en ? length_m1_emit_ext : length_m1_emit),
+		.value_emit(    emit_ext_en ? value_emit_ext     : value_emit),
+		.ack_emit(ack_emit),
 		.consume_pixel(consume_pixel), .curr_value(curr_value)
 	);
 	assign hurry = '0; // Don't hurry with line buffer

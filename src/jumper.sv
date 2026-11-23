@@ -75,7 +75,8 @@ module count_trailing_zeros #(
 			'bzz10000000: n = 7;
 			'bz100000000: n = 8;
 			'b1000000000: n = 9;
-			default: n = 'X;
+			//default: n = 'X; // causes trouble when double buffering
+			default: n = 0;
 		endcase
 	end
 	assign n_trailing = n;

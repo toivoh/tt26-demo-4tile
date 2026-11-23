@@ -12,6 +12,8 @@ module shift_register #(
 
 	genvar i, j;
 
+	wire shift_en_eff = shift_en || reset;
+
 `ifdef PURE_RTL
 	(* mem2reg *) reg [BITS-1:0] data[DEPTH];
 `else
@@ -19,18 +21,18 @@ module shift_register #(
 `endif
 	wire [BITS-1:0] data_next[DEPTH];
 
-	assign data_next[0] = data_in;
+	assign data_next[0] = reset ? '0 : data_in;
 	generate
 		for (i = 1; i < DEPTH; i++) assign data_next[i] = data[i-1];
 
 `ifdef PURE_RTL
 		for (i = 0; i < DEPTH; i++) begin
-			always_ff @(posedge clk) if (shift_en) data[i] <= data_next[i];
+			always_ff @(posedge clk) if (shift_en_eff) data[i] <= data_next[i];
 		end
 `else
 /*
 		wire clk_gated;
-		gf180mcu_fd_sc_mcu7t5v0__icgtp_4 clock_gate(.CLK(clk), .E(shift_en), .TE(0), .Q(clk_gated));
+		gf180mcu_fd_sc_mcu7t5v0__icgtp_4 clock_gate(.CLK(clk), .E(shift_en_eff), .TE(0), .Q(clk_gated));
 		for (i = 0; i < DEPTH; i++) begin
 			//always_ff @(posedge clk_gated) data[i] <= data_next[i];
 			for (j = 0; j < BITS; j++) begin
@@ -41,7 +43,7 @@ module shift_register #(
 /*
 		wire [DEPTH-1:0] clk_gated;
 		for (i = 0; i < DEPTH; i++) begin
-			gf180mcu_fd_sc_mcu7t5v0__icgtp_4 clock_gate(.CLK(clk), .E(shift_en), .TE(0), .Q(clk_gated[i]));
+			gf180mcu_fd_sc_mcu7t5v0__icgtp_4 clock_gate(.CLK(clk), .E(shift_en_eff), .TE(0), .Q(clk_gated[i]));
 			//always_ff @(posedge clk_gated[i]) data[i] <= data_next[i];
 			for (j = 0; j < BITS; j++) begin
 				gf180mcu_fd_sc_mcu7t5v0__dffq_1 sreg_ff(.CLK(clk_gated[i]), .D(data_next[i][j]), .Q(data[i][j]));
@@ -51,7 +53,7 @@ module shift_register #(
 
 		wire [(DEPTH-1)/CLOCK_GATE_CHUNK:0] clk_gated;
 		for (i = 0; i <= (DEPTH-1)/CLOCK_GATE_CHUNK; i++) begin
-			gf180mcu_fd_sc_mcu7t5v0__icgtp_4 clock_gate(.CLK(clk), .E(shift_en), .TE(0), .Q(clk_gated[i]));
+			gf180mcu_fd_sc_mcu7t5v0__icgtp_4 clock_gate(.CLK(clk), .E(shift_en_eff), .TE(0), .Q(clk_gated[i]));
 		end
 		for (i = 0; i < DEPTH; i++) begin
 			for (j = 0; j < BITS; j++) begin

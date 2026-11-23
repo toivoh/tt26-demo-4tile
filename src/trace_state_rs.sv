@@ -13,16 +13,21 @@ module carry_save_adder #( BITS=8 ) (
 	genvar i;
 	generate
 		for (i = 0; i < BITS; i++) begin
-//`ifdef PURE_RTL
+`ifdef PURE_RTL
 			assign {c[i], s[i]} = x[i] + y[i] + z[i];
-/*
 `else
+/*
 			sky130_fd_sc_hd__fa_1 full_adder(
 				.A(x[i]), .B(y[i]), .CIN(z[i]),
 				.COUT(c[i]), .SUM(s[i])
 			);
-`endif
 */
+			gf180mcu_fd_sc_mcu7t5v0__addf_1 full_adder(
+				.A(x[i]), .B(y[i]), .CI(z[i]),
+				.CO(c[i]), .S(s[i])
+			);
+`endif
+
 		end
 	endgenerate
 endmodule : carry_save_adder

@@ -359,12 +359,24 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 
 	wire [2:0] interlace_mask = (interlace_enable && interlace_en && y_orig[0] && !y_hit) ? 3'b100 : 3'b000;
 
+	wire [VALUE_BITS-1:0] lock_dx2_value;
+`ifdef USE_DOUBLE_BUFFER
+	wire emit_ext_en = ctrl_flags[`CTRL_FLAG_LOCK_DX2_UPDATE];
+	wire emit_ext = emit_ext_en;
+	wire [VALUE_BITS-1:0] value_emit_ext = lock_dx2_value;
+	wire consume_pixel_tracer = ack_emit && emit_ext_en;
+`else
+	wire consume_pixel_tracer = consume_pixel;
+`endif
+
 	//wire [VALUE_BITS-1:0] curr_value;
 	buffered_pl_tracer #( `parameters_forward ) btracer(
 		.clk(clk), .reset((reset_view_calc || !view_calc_done) && !force_y_at_thresh), .reset_dxf(reset_dxf), .reset_i_d2(reset_i_d2),
 `ifdef USE_DOUBLE_BUFFER
 		.reset_dbuf(reset),
 		.do_swap(reset_view_calc), .return_mode_en(!hsync),
+
+		.emit_ext_en(emit_ext_en), .emit_ext(emit_ext), .length_m1_emit_ext('0), .value_emit_ext(value_emit_ext),
 `endif
 
 		.ctrl_flags(ctrl_flags),
@@ -392,7 +404,7 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 `endif
 `endif
 
-		.consume_pixel(consume_pixel),
+		.consume_pixel(consume_pixel), .consume_pixel_tracer(consume_pixel_tracer),
 		//.curr_value(curr_value) // included in `buffered_tracer_output_forward
 		`buffered_tracer_output_forward
 	);
@@ -532,16 +544,19 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 		.done(view_calc_done)
 	);
 
+	//assign lock_dx2_value = dx2_e0[7 -: 2];
+	//assign lock_dx2_value = dx2_e0[6 -: 2] | dx2_e2[5 -: 2];
+	//assign lock_dx2_value = (dx2_e0[6 -: 2] | dx2_e2[5 -: 2]) & (dx2_e1[7 -: 2] | dx2_e0[5 -: 2]);
+	assign lock_dx2_value = (dx2_e0[6 -: 2] | dx2_e2[5 -: 2]) & (dx2_e1[7 -: 2]);
+
 	logic [VALUE_BITS-1:0] used_value;
 	always_comb begin
+		used_value = curr_value;
+`ifndef USE_DOUBLE_BUFFER
 		if (ctrl_flags[`CTRL_FLAG_LOCK_DX2_UPDATE]) begin
-			//used_value = dx2_e0[7 -: 2];
-			//used_value = dx2_e0[6 -: 2] | dx2_e2[5 -: 2];
-			//used_value = (dx2_e0[6 -: 2] | dx2_e2[5 -: 2]) & (dx2_e1[7 -: 2] | dx2_e0[5 -: 2]);
-			used_value = (dx2_e0[6 -: 2] | dx2_e2[5 -: 2]) & (dx2_e1[7 -: 2]);
-		end else begin
-			used_value = curr_value;
+			used_value = lock_dx2_value
 		end
+`endif
 		//if (inverse_video) used_value = ~used_value;
 		//if (inverse_video) used_value[1] ^= used_value[0];
 		if (inverse_video) used_value[0] ^= used_value[1];

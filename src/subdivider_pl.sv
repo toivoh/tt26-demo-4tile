@@ -190,7 +190,112 @@ module subdivider_pl #(
 	reg do_descend, do_return, do_push;
 	reg adjusting;
 	reg force_log2_delta_i_zero;
+
+`ifdef USE_ALTERNATE_SUBDIV_LOGIC
+	// Just set next_i1_bisect, next_i2_bisect based on state and input signals(reset, curr_hit_eff, ascending, agree_with_d1)
+	// instead of setting them in the next block
+/*
 	always_comb begin
+		next_i1_bisect = i1_bisect;
+		next_i2_bisect = i2_bisect;
+
+		if (!reset && (curr_hit_eff || ascending)) begin
+			if (state != STATE_ASCENDING) begin
+			end else begin
+				next_i1_bisect = i_d2 << 1; // i_d2;
+				next_i2_bisect = stack_top_i2 << 1; // stack_top_i2;
+			end
+		end else case (reset ? STATE_D1 : state)
+			STATE_D1: begin
+				next_i1_bisect = i_d2 << 1; // i_d2;
+				next_i2_bisect = i2 << 1; // i2;
+			end
+			STATE_D2: begin
+				if (agree_with_d1) begin
+				end else begin
+					next_i1_bisect = i1;
+					next_i2_bisect = i2;
+				end
+			end
+			STATE_BISECT: begin
+				if (agree_with_d1) next_i1_bisect = i_d2;
+				else               next_i2_bisect = i_d2;
+			end
+		endcase
+	end
+*/
+
+	localparam NI1B_SRC_I1_BISECT  = 0;  // next_i1_bisect = i1_bisect;
+	localparam NI1B_SRC_I1         = 1;  // next_i1_bisect = i1;
+	localparam NI1B_SRC_ID2        = 2;  // next_i1_bisect = i_d2;
+	localparam NI1B_SRC_ID2_SHL_1  = 3;  // next_i1_bisect = i_d2 << 1; // i_d2;
+	localparam NI1B_SRC_BITS = 2;
+
+	localparam NI2B_SRC_I2_BISECT       = 0; // next_i2_bisect = i2_bisect;
+	localparam NI2B_SRC_ID2             = 1; // next_i2_bisect = i_d2;
+	localparam NI2B_SRC_I2              = 2; // next_i2_bisect = i2;
+	localparam NI2B_SRC_I2_SHL_1        = 3; // next_i2_bisect = i2 << 1; // i2;
+	localparam NI2B_SRC_STACK_TOP_SHL_1 = 4; // next_i2_bisect = stack_top_i2 << 1; // stack_top_i2;
+	localparam NI2B_SRC_BITS = 3;
+
+	logic [NI1B_SRC_BITS-1:0] next_i1_bisect_src;
+	logic [NI2B_SRC_BITS-1:0] next_i2_bisect_src;
+	always_comb begin
+		next_i1_bisect_src = NI1B_SRC_I1_BISECT; // i1_bisect;
+		next_i2_bisect_src = NI2B_SRC_I2_BISECT; // i2_bisect;
+
+		if (!reset && (curr_hit_eff || ascending)) begin
+			if (state != STATE_ASCENDING) begin
+			end else begin
+				next_i1_bisect_src = NI1B_SRC_ID2_SHL_1; // i_d2 << 1; // i_d2;
+				next_i2_bisect_src = NI2B_SRC_STACK_TOP_SHL_1; // stack_top_i2 << 1; // stack_top_i2;
+			end
+		end else case (reset ? STATE_D1 : state)
+			STATE_D1: begin
+				next_i1_bisect_src = NI1B_SRC_ID2_SHL_1; // i_d2 << 1; // i_d2;
+				next_i2_bisect_src = NI2B_SRC_I2_SHL_1; // i2 << 1; // i2;
+			end
+			STATE_D2: begin
+				if (agree_with_d1) begin
+				end else begin
+					next_i1_bisect_src = NI1B_SRC_I1; // i1;
+					next_i2_bisect_src = NI2B_SRC_I2; // i2;
+				end
+			end
+			STATE_BISECT: begin
+				if (agree_with_d1) next_i1_bisect_src = NI1B_SRC_ID2; // i_d2;
+				else               next_i2_bisect_src = NI2B_SRC_ID2; // i_d2;
+			end
+		endcase
+	end
+
+	always_comb begin
+		next_i1_bisect = i1_bisect;
+		next_i2_bisect = i2_bisect;
+		case (next_i1_bisect_src)
+			NI1B_SRC_I1_BISECT: next_i1_bisect = i1_bisect;
+			NI1B_SRC_I1:        next_i1_bisect = i1;
+			NI1B_SRC_ID2:       next_i1_bisect = i_d2;
+			NI1B_SRC_ID2_SHL_1: next_i1_bisect = i_d2 << 1; // i_d2;
+			default:            next_i1_bisect = i1_bisect;
+		endcase
+		case (next_i2_bisect_src)
+			NI2B_SRC_I2_BISECT:       next_i2_bisect = i2_bisect;
+			NI2B_SRC_ID2:             next_i2_bisect = i_d2;
+			NI2B_SRC_I2:              next_i2_bisect = i2;
+			NI2B_SRC_I2_SHL_1:        next_i2_bisect = i2 << 1; // i2;
+			NI2B_SRC_STACK_TOP_SHL_1: next_i2_bisect = stack_top_i2 << 1; // stack_top_i2;
+			default:                  next_i2_bisect = stack_top_i2 << 1; // stack_top_i2;
+		endcase
+	end
+`endif
+
+	always_comb begin
+`ifndef USE_ALTERNATE_SUBDIV_LOGIC
+		next_i1_bisect = i1_bisect;
+		next_i2_bisect = i2_bisect;
+`endif
+
 		next_state = 'X;
 		//decision_side = 1;
 		do_descend = 0;
@@ -198,8 +303,6 @@ module subdivider_pl #(
 		do_push = 0;
 		next_i1 = i1;
 		next_i2 = i2;
-		next_i1_bisect = i1_bisect;
-		next_i2_bisect = i2_bisect;
 		update_i_d1 = 0; next_update_i_d1 = 0;
 		update_i_d2 = 0;
 		update_i_d2_sign = 'X;
@@ -229,10 +332,13 @@ module subdivider_pl #(
 				if (!last_ascending) update_i_d1 = 1; // Second cycle of ascent, i_d1 <= i_d2
 
 				// Start iterating on i_dx2 -- almost same behavior as in STATE_D1, which will finish iterating
+`ifndef USE_ALTERNATE_SUBDIV_LOGIC // next_i1_bisect, next_i2_bisect are set above instead, according to the same conditions
 				next_i1_bisect = i_d2 << 1; // i_d2;
 				next_i2_bisect = stack_top_i2 << 1; // stack_top_i2;
-				//if (n_bisect != 0) begin
 				if (next_i1_bisect != next_i2_bisect) begin
+`else
+				if (n_bisect != 0) begin
+`endif
 					adjusting = 1;
 					update_i_d2 = 1; force_update_i_d2 = 1;
 					//update_i_d2_sign = n_bisect[N_BISECT_BITS-1];
@@ -247,17 +353,19 @@ module subdivider_pl #(
 			STATE_D1: begin
 				//decision_side = 0;
 				// OPT: could we avoid the left shift?
+`ifndef USE_ALTERNATE_SUBDIV_LOGIC // next_i1_bisect, next_i2_bisect are set above instead, according to the same conditions
 				next_i1_bisect = i_d2 << 1; // i_d2;
 				next_i2_bisect = i2 << 1; // i2;
-
-				//if (n_bisect != 0) begin
 				if (next_i1_bisect != next_i2_bisect) begin
+`else
+				if (n_bisect != 0) begin
+`endif
 					adjusting = 1;
 					update_i_d2 = 1; force_update_i_d2 = 1;
 					//update_i_d2_sign = n_bisect[N_BISECT_BITS-1];
 					update_i_d2_sign_from_n_bisect = 1;
 					next_state = STATE_D1;
-				end	else begin
+				end	else if (!reset) begin
 					if (i1 == i2) begin
 						do_descend = 1; next_state = STATE_D1;
 					end else begin
@@ -271,16 +379,20 @@ module subdivider_pl #(
 					do_descend = 1; next_state = STATE_D1;
 				end else begin
 					next_state = STATE_BISECT;
+`ifndef USE_ALTERNATE_SUBDIV_LOGIC // next_i1_bisect, next_i2_bisect are set above instead, according to the same conditions
 					next_i1_bisect = i1;
 					next_i2_bisect = i2;
+`endif
 
 					update_i_d2 = 1; update_i_d2_sign = 1;
 				end
 			end
 			STATE_BISECT: begin
 				//decision_side = 1;
+`ifndef USE_ALTERNATE_SUBDIV_LOGIC // next_i1_bisect, next_i2_bisect are set above instead, according to the same conditions
 				if (agree_with_d1) next_i1_bisect = i_d2;
 				else               next_i2_bisect = i_d2;
+`endif
 				update_i_d2 = 1; update_i_d2_sign = !agree_with_d1;
 				next_state = STATE_BISECT;
 			end
@@ -291,7 +403,11 @@ module subdivider_pl #(
 
 		//if (n_bisect == 1) begin
 		//if (i2_bisect - i1_bisect == 1) begin
-		if (next_state == STATE_BISECT && next_i2_bisect - next_i1_bisect == 1) begin
+`ifndef USE_ALTERNATE_SUBDIV_LOGIC
+		if (!reset && next_state == STATE_BISECT && next_i2_bisect - next_i1_bisect == 1) begin
+`else
+		if (!reset && next_state == STATE_BISECT && n_bisect == 1) begin
+`endif
 		//if (next_state == STATE_BISECT && n_bisect == 1) begin // OPT: can we use n_bisect instead of next_i2_bisect - next_i1_bisect?
 			do_push = 1;
 			do_descend = 1; next_state = STATE_D1;
@@ -305,20 +421,33 @@ module subdivider_pl #(
 
 
 		//if (do_descend) next_state = STATE_D1;
-		
+/*
+		if (reset) begin // Duplicated from STATE_D1, reduced. Does it help prevent getting X from GL simulations
+			// OPT: could we avoid the left shift?
+			next_i1_bisect = i_d2 << 1; // i_d2;
+			next_i2_bisect = i2 << 1; // i2;
+
+			if (next_i1_bisect != next_i2_bisect) begin
+				adjusting = 1;
+				update_i_d2 = 1; force_update_i_d2 = 1;
+				//update_i_d2_sign = n_bisect[N_BISECT_BITS-1];
+				update_i_d2_sign_from_n_bisect = 1;
+			end
+		end
+*/
 	end
 
 
 `ifdef USE_STACK_UNDERFLOW_RESTART
 	// Don't restart during the first two ascent cycles; they update dx1 and dx2
-	assign restart_from_top = (stack_depth == 0 && do_return && !(emit && !ack_emit) && ascending);
+	assign restart_from_top = (!reset && stack_depth == 0 && do_return && !(emit && !ack_emit) && ascending);
 `else
 	assign restart_from_top = 0;
 `endif
 
 
 	wire en_enabled = !(curr_hit_eff && (state != STATE_ASCENDING));
-	wire en_eff = (en && en_enabled) || restart_from_top;
+	wire en_eff = (en && en_enabled) || restart_from_top || reset;
 
 
 
@@ -530,4 +659,40 @@ module subdivider_pl #(
 
 	assign stack_pointer_out = stack_pointer;
 	assign stack_depth_out = stack_depth;
+
+`ifdef DEBUG_SINKS
+	named_buffer debug_update_dx2(.in(update_dx2));
+	named_buffer debug_ddx2_sign(.in(ddx2_sign));
+	named_buffer debug_update_i_d2(.in(update_i_d2));
+	named_buffer debug_force_update_i_d2(.in(force_update_i_d2));
+	named_buffer debug_en_eff(.in(en_eff));
+	named_buffer debug_restart_from_top(.in(restart_from_top));
+	named_buffer debug_update_i_d2_sign_eff(.in(update_i_d2_sign_eff));
+	named_buffer debug_force_log2_delta_i_zero(.in(force_log2_delta_i_zero ));
+	named_buffer debug_lock_dx2_update(.in(lock_dx2_update));
+	named_buffer debug_consume_pixel(.in(consume_pixel));
+
+	named_buffer debug_reset_i_d2(.in(reset_i_d2));
+
+	named_buffer debug_reset(.in(reset));
+
+	named_buffer #(.BITS(N_BITS)) debug_ddx2_shl(.in(ddx2_shl));
+	named_buffer #(.BITS(N_BITS)) debug_log2_delta_i_eff(.in(log2_delta_i_eff));
+	named_buffer #(.BITS(POS_BITS)) debug_i_d2(.in(i_d2));
+	named_buffer #(.BITS(POS_BITS)) debug_i2(.in(i2));
+	named_buffer #(.BITS(N_BITS)) debug_log2_delta_i(.in(log2_delta_i));
+	named_buffer #(.BITS(N_BISECT_BITS)) debug_n_bisect(.in(n_bisect));
+	named_buffer #(.BITS(N_BISECT_BITS-1)) debug_closest_pow2_in(.in(closest_pow2_in));
+
+	named_buffer #(.BITS(POS_BITS)) debug_i_d2_init(.in(i_d2_init));
+
+	named_buffer #(.BITS(POS_BITS+1)) debug_next_i1_bisect(.in(next_i1_bisect));
+	named_buffer #(.BITS(POS_BITS+1)) debug_next_i2_bisect(.in(next_i2_bisect));
+
+`ifdef USE_ALTERNATE_SUBDIV_LOGIC
+	named_buffer #(.BITS(NI1B_SRC_BITS)) debug_next_i1_bisect_src(.in(next_i1_bisect_src));
+	named_buffer #(.BITS(NI2B_SRC_BITS)) debug_next_i2_bisect_src(.in(next_i2_bisect_src));
+`endif
+
+`endif
 endmodule : subdivider_pl

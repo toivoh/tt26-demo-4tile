@@ -1,4 +1,7 @@
 
+`define DEBUG_SINKS
+`define USE_ALTERNATE_SUBDIV_LOGIC
+
 //`define USE_OLD_TRACE_STATE
 
 `define COMPRESS_FA_STACK

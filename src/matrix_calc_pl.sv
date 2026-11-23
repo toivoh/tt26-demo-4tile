@@ -106,7 +106,10 @@ module matrix_calc_pl #(
 			wire signed [DDX_BITS-1:0] dx2_in_i = (stage == 3) ? $signed(dx2_in[i]) : $signed({1'b0, dx2_in[i]});
 
 			always_ff @(posedge clk) begin
-				if (update_ddx) ddx[i] <= dx2_in_i;
+				if (reset) ddx[i] <= '0;
+				else begin
+					if (update_ddx) ddx[i] <= dx2_in_i;
+				end
 			end
 		end
 	endgenerate

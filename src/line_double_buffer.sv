@@ -48,11 +48,12 @@ module line_double_buffer #(
 	wire read_index = !write_index;
 
 	reg last_return_mode_en;
-	always_ff @(posedge clk) last_return_mode_en <= return_mode_en;
+	always_ff @(posedge clk) last_return_mode_en <= reset ? 0 : return_mode_en;
 
 	reg [VALUE_BITS-1:0] head_value, tail_value;
 	reg [LENGTH_BITS-1:0] head_length_m1; // length - 1
 	reg [SHORT_LENGTH_BITS-1:0] tail_length_m1; // length - 1
+
 	logic [VALUE_BITS-1:0] next_head_value;
 	logic [LENGTH_BITS-1:0] next_head_length_m1; // length - 1
 	logic [SHORT_LENGTH_BITS-1:0] next_tail_length_m1; // length - 1
@@ -60,7 +61,7 @@ module line_double_buffer #(
 	logic emit_to_buffer;
 	logic [SHORT_LENGTH_BITS-1:0] length_m1_emit_to_buffer;
 
-	logic consume_interval;
+	logic consume_interval, reset_tail_length_borrow;
 
 	logic write_mode_en0, return_mode_en0, rw_en0, write_mode_en1, return_mode_en1, rw_en1;
 	logic [ENTRY_BITS-1:0] rdata0, rdata1;
@@ -93,6 +94,7 @@ module line_double_buffer #(
 
 		// Read side
 		consume_interval = 0;
+		reset_tail_length_borrow = 0;
 
 		if (!head_empty) begin
 			if (head_length_m1 >= 2**SHORT_LENGTH_BITS) begin // too long for one emit; emit a max length interval
@@ -120,6 +122,7 @@ module line_double_buffer #(
 		end
 		if (last_return_mode_en && !return_mode_en) begin
 			consume_interval = 1; // Get first interval
+			reset_tail_length_borrow = 1;
 		end
 
 		write_mode_en0 = 0; write_mode_en1 = 0;
@@ -144,6 +147,8 @@ module line_double_buffer #(
 		if (reset) begin
 			write_index <= 0;
 			head_length_m1 <= '1; // empty
+
+			head_value <= '0;
 			tail_length_borrow <= 0;
 		end else if (do_swap) begin
 			write_index <= !write_index;
@@ -155,7 +160,7 @@ module line_double_buffer #(
 			if (consume_interval) begin
 				tail_length_m1 <= rlength_m1;
 				// Max out at 1 unit of borrow. There will be edge cases where this is not enough, causing the rest of the line to shift a pixel to the right or so, but it should be uncommon.
-				tail_length_borrow <= (tail_length_m1_reduced[1:0] != '1);
+				tail_length_borrow <= reset_tail_length_borrow ? 0 : (tail_length_m1_reduced[1:0] != '1);
 				tail_value <= rvalue;
 			end else begin
 				tail_length_m1 <= tail_length_m1_reduced;

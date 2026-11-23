@@ -162,45 +162,47 @@ module view_calc_pl #(
 		stage_done = 0; next_stage_done = 0;
 		zero_dx = 1;
 
-		case (stage)
-			0: begin
-				i_d2_init = 0;
-				i2_init = fov_factor;
-			end
-			1: begin
-				//i_d2_init = 512;
-				//i2_init = (y ^ 256) | 512;
-				// The version above can apparently hang the multiplier
-				i_d2_init = 256;
-				i2_init = (y ^ 256) & 511;
-			end
-			2: begin
-				i_d2_init = 512;
-				i2_init = 512 - 320;
-			end
-		endcase
+		if (!reset) begin
+			case (stage)
+				0: begin
+					i_d2_init = 0;
+					i2_init = fov_factor;
+				end
+				1: begin
+					//i_d2_init = 512;
+					//i2_init = (y ^ 256) | 512;
+					// The version above can apparently hang the multiplier
+					i_d2_init = 256;
+					i2_init = (y ^ 256) & 511;
+				end
+				2: begin
+					i_d2_init = 512;
+					i2_init = 512 - 320;
+				end
+			endcase
 
-		case (state)
-			0: begin
-				mat_control = 1;
-			end
-			1: begin
-				reset_dxf = 1;
-				zero_dx = (stage == 0);
-			end
-			2: begin
-				stage_done = !updating_i_d2_eff;
-				next_stage_done = !updating_i_d2;
-				i_d2_init = 0;
-				reset_i_d2 = (stage[1] == 1) && stage_done;
-				if (reset_i_d2) i2_init = 639;
-			end
-			3: begin
-`ifdef USE_STACK_UNDERFLOW_RESTART
-				i2_init = 639; // Make sure this value stays during the whole done phase
-`endif
-			end
-		endcase
+			case (state)
+				0: begin
+					mat_control = 1;
+				end
+				1: begin
+					reset_dxf = 1;
+					zero_dx = (stage == 0);
+				end
+				2: begin
+					stage_done = !updating_i_d2_eff;
+					next_stage_done = !updating_i_d2;
+					i_d2_init = 0;
+					reset_i_d2 = (stage[1] == 1) && stage_done;
+					if (reset_i_d2) i2_init = 639;
+				end
+				3: begin
+	`ifdef USE_STACK_UNDERFLOW_RESTART
+					i2_init = 639; // Make sure this value stays during the whole done phase
+	`endif
+				end
+			endcase
+		end
 
 		reset_mat = reset || (stage_done && stage[1] == 0);
 		if (reset_mat) mat_control = 1;
@@ -229,6 +231,14 @@ module view_calc_pl #(
 		end
 		update_dx1_ext_out = update_dx1_ext;
 		next_update_dx1_ext_out = next_update_dx1_ext;
+
+		if (reset) begin
+			reset_dxf_out = 1;
+			reset_i_d2_out = 1;
+			i_d2_init_out = '0;
+			i2_init_out = '0;
+		end
+
 		if (reset_dxf_out) reset_i_d2_out = 1;
 	end
 
