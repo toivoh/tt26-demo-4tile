@@ -7,7 +7,7 @@ FST ?= -fst # Use more efficient FST format
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
 PROJECT_SOURCES = project_pl.v trace_state.sv trace_state_rs.sv subdet.sv subdivider_pl.sv subdiv_pl_tracer.sv interval_buffer2.sv buffered_pl_tracer.sv vga_pl_tracer.sv matrix_calc_pl.sv view_calc_pl.sv \
- jumper.sv scene.sv room_navigator.sv memories.sv music_player_wrapper.sv music_player.sv scene1.sv shift_register.sv line_buffer.sv line_double_buffer.sv named_buffer.sv
+ jumper.sv room_navigator.sv memories.sv music_player_wrapper.sv music_player.sv scene1.sv shift_register.sv line_buffer.sv line_double_buffer.sv named_buffer.sv
 PROJECT_SOURCES_ALWAYS = raster_scan.sv synth_test.sv
 
 ifneq ($(GATES),yes)
