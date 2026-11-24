@@ -32,6 +32,8 @@ module synth_alu #(
 
 		input wire [ACC_BITS-1:0] add_mask,
 
+		input wire double_global_osc_step,
+
 		output wire [GPHASE_BITS-1:0] gphase_out,
 		output wire signed [ACC_BITS-1:0] acc_out,
 		output wire signed [OUT_ACC_BITS-1:0] out_acc_out,
@@ -114,9 +116,10 @@ module synth_alu #(
 	always_comb if (!REDUCED) begin
 		acc_in = 'X;
 		case (src1_sel)
-			`SRC1_ZERO:     acc_in = '0;
-			`SRC1_ACC:      acc_in = acc;
-			`SRC1_MINUS1:   acc_in = '1;
+			`SRC1_ZERO:      acc_in = '0;
+			`SRC1_ACC:       acc_in = acc;
+			`SRC1_MINUS1:    acc_in = '1;
+			`SRC1_GOSC_STEP: acc_in = double_global_osc_step ? 2 : 1;
 			//`SRC1_ACC_SHL1: acc_in = acc << 1;
 			//`SRC1_INV_ACC:  acc_in = ~acc;
 			default: acc_in = 'X;
@@ -253,6 +256,8 @@ module synth_scheduler  #(
 		input wire skip_out_acc_update,
 		input wire gphase_override,
 		input wire [GPHASE_BITS-1:0] gphase_in,
+
+		input wire double_global_osc_step,
 
 		output wire new_voice_sample, new_voice_sample_pregain,
 		output wire signed [ACC_BITS-1:0] acc_out,
@@ -483,11 +488,13 @@ module synth_scheduler  #(
 				end
 
 				STATE_GPHASE1: begin
-					src1_sel = `SRC1_ZERO;
+					//src1_sel = `SRC1_ZERO;
+					src1_sel = `SRC1_GOSC_STEP;
 					flags[`FLAG_ZEXT_ACC] = 1;
 					src2_sel = `SRC2_GPHASE_LOW;
 					src2_mod[`SRC2MOD_BIT_CARRY_IN_CONTROL] = 1;
-					src2_mod[`SRC2MOD_BIT_CARRY_IN] = 1;
+					//src2_mod[`SRC2MOD_BIT_CARRY_IN] = 1;
+					src2_mod[`SRC2MOD_BIT_CARRY_IN] = 0;
 					wes[`WE_BIT_ACC] = 1;
 					wes[`WE_BIT_GPHASE_LOW] = 1;
 				end
@@ -592,6 +599,7 @@ module synth_scheduler  #(
 		.out_acc_initial(out_acc_initial),
 		.src1_sel(src1_sel), .src2_sel(src2_sel), .src2_mod(src2_mod), .flags(flags), .res_sel(res_sel), .wes(wes),
 		.add_mask(add_mask),
+		.double_global_osc_step(double_global_osc_step),
 		.final_factor_b(0), .first_factor_b(first_factor_b), .factor_b(factor_b_bits),
 
 		.src1_in(src1_in), .src2_in(src2_in),

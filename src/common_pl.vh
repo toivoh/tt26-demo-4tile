@@ -1,6 +1,7 @@
 
 `define DEBUG_SINKS
 `define USE_ALTERNATE_SUBDIV_LOGIC
+//`define USE_RESET_RAMS
 
 `define USE_TWEAKED_MUSIC
 
@@ -79,9 +80,10 @@
 
 
 `define SRC1_BITS 2
-`define SRC1_ZERO     2'd0
-`define SRC1_ACC      2'd1
-`define SRC1_MINUS1   2'd2
+`define SRC1_ZERO      2'd0
+`define SRC1_ACC       2'd1
+`define SRC1_MINUS1    2'd2
+`define SRC1_GOSC_STEP 2'd3
 //`define SRC1_ACC_SHL1 2'd2
 //`define SRC1_INV_ACC  2'd3
 

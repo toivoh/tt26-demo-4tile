@@ -392,6 +392,8 @@ module music_player #(
 	) (
 		input wire clk, reset,
 
+		input wire [1:0] speedup_pitch,
+
 		input wire [T_BITS-1:0] t,
 		input wire first_voice,
 		input wire [VOICE_BITS-1:0] voice,
@@ -445,6 +447,16 @@ module music_player #(
 `endif
 
 	localparam BASS_OCT = BASE_OCT;
+
+
+	wire new_sample = first_voice && (state == '0); // It needs to trigger once per sample; doesn't really matter when for speedup_pitch to work
+	reg [1:0] st_low;
+	always_ff @(posedge clk) begin
+		if (reset) st_low <= 0;
+		else st_low <= st_low + new_sample;
+	end
+	wire double_global_osc_step = (st_low < speedup_pitch) || (speedup_pitch == 3);
+
 
 	wire [GPHASE_IN_BITS-1:0] gphase;
 
@@ -1252,6 +1264,7 @@ module music_player #(
 
 		.skip_out_acc_update(skip_out_acc_update),
 		.gphase_in(gphase_in), .gphase_override(gphase_override),
+		.double_global_osc_step(double_global_osc_step),
 
 		.src1_in('X), .src2_in('X),
 		.src1_out(src1_out), .src2_out(src2_out),
@@ -1275,6 +1288,7 @@ module music_player #(
 		.override_en(0), .override_src2_sel('X), .override_wes('X),
 
 		.src1_in(src1_out), .src2_in(src2_out), .gphase_in(gphase_in),
+		.double_global_osc_step(double_global_osc_step),
 
 		.new_voice_sample(new_voice_sample), .new_voice_sample_pregain(new_voice_sample_pregain),
 		.acc_out(acc)

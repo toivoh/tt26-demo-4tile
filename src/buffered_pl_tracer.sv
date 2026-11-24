@@ -10,7 +10,7 @@ module buffered_pl_tracer #(
 		`propagated_parameter_definitions,
 		`derived_parameter_definitions
 	) (
-		input wire clk, reset, reset_dxf, reset_i_d2,
+		input wire clk, initial_reset, reset, reset_dxf, reset_i_d2,
 `ifdef USE_DOUBLE_BUFFER
 		input wire reset_dbuf, // reset once is enough
 		input do_swap, return_mode_en, // control line_double_buffer: see comments at the top of line_double_buffer.sv
@@ -70,7 +70,7 @@ module buffered_pl_tracer #(
 	// ------
 	//wire ack_emit;
 	subdiv_pl_tracer #( `parameters_forward ) tracer(
-		.clk(clk), .reset(reset), .reset_dxf(reset_dxf), .reset_i_d2(reset_i_d2),
+		.clk(clk), .initial_reset(initial_reset), .reset(reset), .reset_dxf(reset_dxf), .reset_i_d2(reset_i_d2),
 		.hurry(hurry),
 		.ctrl_flags(ctrl_flags), .scene_flags(scene_flags), .consume_pixel(consume_pixel_tracer), .frame_t(frame_t), .interlace_mask(interlace_mask),
 

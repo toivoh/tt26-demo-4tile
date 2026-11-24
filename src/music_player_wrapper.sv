@@ -30,6 +30,7 @@ module music_player_wrapper #(
 		input wire clk, reset,
 
 		input wire [2:0] speedup,
+		input wire [1:0] speedup_pitch,
 
 		input wire signed [10:0] x0,
 		input wire signed [9:0] y_in,
@@ -132,6 +133,8 @@ module music_player_wrapper #(
 
 	music_player #(.OUT_ACC_BITS(OUT_ACC_BITS), .OCT_BITS(OCT_BITS), .ACC_BITS(ACC_BITS), .STATE_BITS(STATE_BITS), .T_INT_BITS(T_BITS), .T_FRAC_BITS(T_FRAC_BITS), .VOICE_BITS(VOICE_BITS), .DELTA_SIGMA_BITS(DELTA_SIGMA_BITS)) mplayer(
 		.clk(clk), .reset(reset),
+
+		.speedup_pitch(speedup_pitch),
 
 		.t(t), .first_voice(voice==0), .voice(voice), .state(state),
 		.out_acc_initial(out_acc_initial),

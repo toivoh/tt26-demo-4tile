@@ -485,10 +485,10 @@ module trace_state_rs #(
 			//dx_signs <= 'X;
 			//{x_corner[2], x_corner[1], x_corner[0]} <= x_corner_initial;
 			//{axis_sizes[2], axis_sizes[1], axis_sizes[0]} <= axis_sizes_initial;
-			face_axis <= 'X;
-			wall_face_axis <= 'X;
-			axis_1_dom_0 <= 'X;
-			old_dom <= 'X;
+			face_axis <= '0;
+			wall_face_axis <= '0;
+			axis_1_dom_0 <= '0;
+			old_dom <= '0;
 			wall_hit <= 0;
 			room <= room_initial;
 			part_two <= 0;

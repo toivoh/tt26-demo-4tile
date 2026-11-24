@@ -158,14 +158,12 @@ module raster_scan #(
 
 	reg vsync_reg;
 	always_ff @(posedge clk) begin
-		/*
 		if (reset) begin
 			vsync_reg <= 1;
 		end else begin
 			if (en && new_line) vsync_reg <= vsync0;
 		end
-		*/
-		if (en && new_line) vsync_reg <= vsync0;
+		//if (en && new_line) vsync_reg <= vsync0;
 	end
 	assign vsync = vsync_reg;
 

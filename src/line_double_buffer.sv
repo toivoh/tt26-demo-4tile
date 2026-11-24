@@ -150,6 +150,9 @@ module line_double_buffer #(
 
 			head_value <= '0;
 			tail_length_borrow <= 0;
+
+			tail_value <= '0;
+			tail_length_m1 <= '0;
 		end else if (do_swap) begin
 			write_index <= !write_index;
 			head_length_m1 <= '1; // empty

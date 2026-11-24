@@ -46,7 +46,8 @@ module find_closest_pow2_m1 #(
 			'b10zzzzzzzzz: n =  9; // 1024 - 1535
 			'b11zzzzzzzzz: n = 10; // 1536 - 2047
 //			'b10zzzzzzzzzz: n = 10; // 2048 - 3071
-			default: n = 'X;
+			//default: n = 'X;
+			default: n = '0;
 		endcase
 		//$display("closest_pow2_m1", " in:", in, " n:", n);
 	end
@@ -463,7 +464,8 @@ module subdivider_pl #(
 		for (i = 0; i < DECISION_BITS; i++) begin
 			always_ff @(posedge clk) begin
 				if (reset) begin
-					d1[i] <= 'X;
+					//d1[i] <= 'X;
+					d1[i] <= '0;
 				end begin
 					if ((en_eff && state == STATE_D1) && decision_mask[i]) d1[i] <= curr_decision[i];
 				end
@@ -577,6 +579,9 @@ module subdivider_pl #(
 			emit_acked <= 0;
 			last_ascending <= 0;
 			line_done <= 0;
+
+			i1_bisect <= '0;
+			i2_bisect <= '0;
 		end else begin
 			if (en_eff) begin
 				i1 <= next_i1;
@@ -675,6 +680,10 @@ module subdivider_pl #(
 	named_buffer debug_reset_i_d2(.in(reset_i_d2));
 
 	named_buffer debug_reset(.in(reset));
+
+	named_buffer debug_en(.in(en));
+	named_buffer debug_en_enabled(.in(en_enabled));
+	named_buffer debug_ack_emit(.in(ack_emit));
 
 	named_buffer #(.BITS(N_BITS)) debug_ddx2_shl(.in(ddx2_shl));
 	named_buffer #(.BITS(N_BITS)) debug_log2_delta_i_eff(.in(log2_delta_i_eff));

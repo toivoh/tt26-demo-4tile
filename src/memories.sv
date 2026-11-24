@@ -108,9 +108,22 @@ module np_latch_ram #(
 `else
 
 	(* mem2reg *) reg [DATA_BITS-1:0] data[NUM_ADDR];
+`ifdef USE_RESET_RAMS
+	for (j = 0; j < NUM_ADDR; j++) begin
+		always_ff @(posedge clk) begin
+			if (reset) begin
+				data[i] <= '0;
+			end else begin
+				if (we && (i == addr)) data[i] <= wdata;
+			end
+		end
+	end
+`else
 	always_ff @(posedge clk) begin
 		if (we) data[addr] <= wdata;
 	end
+`endif
+
 
 `endif
 

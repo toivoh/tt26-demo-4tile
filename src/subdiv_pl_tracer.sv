@@ -10,7 +10,7 @@ module subdiv_pl_tracer #(
 		`propagated_parameter_definitions, `derived_parameter_definitions,
 		USE_JUMPER=1
 	) (
-		input wire clk, reset, reset_dxf, reset_i_d2,
+		input wire clk, initial_reset, reset, reset_dxf, reset_i_d2,
 		input wire hurry,
 
 		input wire [`CTRL_FLAG_BITS-1:0] ctrl_flags,
@@ -240,7 +240,8 @@ module subdiv_pl_tracer #(
 				//if (update_dx1) dx1[i] <= dx2[i];
 			end
 
-			p_latch_register #(.BITS(DX_BITS)) dx1_register(.clk(clk), .reset('0), .we(update_dx1), .next_we(next_update_dx1), .reset_wdata('0), .wdata(dx2[i]), .rdata(dx1[i]), .next_wdata('X));
+			//p_latch_register #(.BITS(DX_BITS)) dx1_register(.clk(clk), .reset('0), .we(update_dx1), .next_we(next_update_dx1), .reset_wdata('0), .wdata(dx2[i]), .rdata(dx1[i]), .next_wdata('X));
+			p_latch_register #(.BITS(DX_BITS)) dx1_register(.clk(clk), .reset(initial_reset), .we(update_dx1), .next_we(next_update_dx1), .reset_wdata('0), .wdata(dx2[i]), .rdata(dx1[i]), .next_wdata('X));
 		end
 	endgenerate
 

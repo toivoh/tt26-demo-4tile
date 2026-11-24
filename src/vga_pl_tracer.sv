@@ -388,7 +388,7 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 
 	//wire [VALUE_BITS-1:0] curr_value;
 	buffered_pl_tracer #( `parameters_forward ) btracer(
-		.clk(clk), .reset((reset_view_calc || !view_calc_done) && !force_y_at_thresh), .reset_dxf(reset_dxf), .reset_i_d2(reset_i_d2),
+		.clk(clk), .initial_reset(reset), .reset((reset_view_calc || !view_calc_done) && !force_y_at_thresh), .reset_dxf(reset_dxf), .reset_i_d2(reset_i_d2),
 `ifdef USE_DOUBLE_BUFFER
 		.reset_dbuf(reset),
 		.do_swap(reset_view_calc), .return_mode_en(!hsync),
@@ -658,7 +658,7 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 	music_player_wrapper mplayer_wrapper(
 		.clk(clk), .reset(reset),
 
-		.speedup(speedup),
+		.speedup(speedup), .speedup_pitch(speedup_frames),
 		.x0(x0), .y_in(full_y), .frame_t(frame_t),
 		.skip_out_acc_update(0), .gphase_override(0), .gphase_in('X),
 		.scale_override_en(0), .scale_override('X), .nonharmonic_override('X),
