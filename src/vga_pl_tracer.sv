@@ -60,7 +60,7 @@ module vga_pl_tracer #( `propagated_parameter_definitions, `derived_parameter_de
 		if (reset) ft_low <= 0;
 		else ft_low <= ft_low + new_frame;
 	end
-	wire double_frame_step = ({ft_low[0], ft_low[1]} < speedup_frames) || (speedup_frames == 3);
+	wire double_frame_step = (({ft_low[0], ft_low[1]} < speedup_frames) || (speedup_frames == 3)) && !(frame_t[10:0] == '1);
 
 `ifdef FPGA
 	localparam DOUBLE_STEP = 1;
