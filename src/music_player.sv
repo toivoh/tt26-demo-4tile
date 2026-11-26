@@ -455,7 +455,7 @@ module music_player #(
 		if (reset) st_low <= 0;
 		else st_low <= st_low + new_sample;
 	end
-	wire double_global_osc_step = (st_low < speedup_pitch) || (speedup_pitch == 3);
+	wire double_global_osc_step = ({st_low[0], st_low[1]} < speedup_pitch) || (speedup_pitch == 3);
 
 
 	wire [GPHASE_IN_BITS-1:0] gphase;
